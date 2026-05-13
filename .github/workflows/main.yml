@@ -1,0 +1,29 @@
+name: Run Dedik AI Bot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *' # Menjalankan otomatis setiap jam
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread oauth2client telegram-send pandas
+
+      - name: Run Script
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python main.py
+        
