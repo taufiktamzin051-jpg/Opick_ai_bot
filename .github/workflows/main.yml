@@ -2,8 +2,6 @@ name: Run Dedik AI Bot
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 * * * *' # Menjalankan otomatis setiap jam
 
 jobs:
   build:
@@ -19,11 +17,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install gspread oauth2client telegram-send pandas
+          pip install gspread oauth2client requests pandas
 
       - name: Run Script
         env:
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-        run: python main.py
+        run: python main_bot.py
+
         
