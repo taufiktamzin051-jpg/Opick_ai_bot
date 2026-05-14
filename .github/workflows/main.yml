@@ -1,31 +1,27 @@
-name: Run Dedik AI Bot
+name: Dedik AI Auto Run
 
 on:
   workflow_dispatch:
 
 jobs:
-  run-bot:
+  kirim_pesan:
     runs-on: ubuntu-latest
     steps:
-      - name: Repositori Checkout
+      - name: Ambil Kode
         uses: actions/checkout@v3
 
-      - name: Menyiapkan Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Instal Pustaka
-        run: |
-          pip install gspread oauth2client
+      - name: Install Library
+        run: pip install requests gspread oauth2client
 
-      - name: Jalankan Skrip
+      - name: Eksekusi Bot
         env:
-          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-        run: |
-          python main_bot.py
-          
-
-
-        
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          KREDENSIAL_GCP: ${{ secrets.GCP_CREDENTIALS }}
+          ID_LEMBAR_KELIPATAN: ${{ secrets.SPREADSHEET_ID }}
+        run: python main_bot.py
