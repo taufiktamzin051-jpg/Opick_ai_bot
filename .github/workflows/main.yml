@@ -1,10 +1,15 @@
-name: Dedik AI Auto Run
+name: Dedik AI Robot Otomatis
 
 on:
-  workflow_dispatch:
+  schedule:
+    # Berjalan otomatis setiap jam 00:00 UTC (07:00 WIB)
+    - cron: '0 0 * * *'
+    # Berjalan otomatis setiap jam 12:00 UTC (19:00 WIB)
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Tombol manual tetap ada untuk jaga-jaga
 
 jobs:
-  kirim_pesan:
+  eksekusi:
     runs-on: ubuntu-latest
     steps:
       - name: Ambil Kode
@@ -15,10 +20,10 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install Library
+      - name: Install Pustaka
         run: pip install requests gspread oauth2client
 
-      - name: Eksekusi Bot
+      - name: Jalankan Bot
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
