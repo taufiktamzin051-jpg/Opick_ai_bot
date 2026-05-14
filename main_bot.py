@@ -1,26 +1,25 @@
-
 import os
 import requests
 
-def kirim_test():
+def debug_kirim():
     token = os.getenv('TELEGRAM_TOKEN')
     chat_id = os.getenv('TELEGRAM_CHAT_ID')
     
-    # Pesan yang akan dikirim
-    teks = "🚀 DEDIK AI: Koneksi Berhasil! Jika Anda membaca ini, berarti bot sudah benar."
+    # Cek apakah token terbaca
+    if not token:
+        print("❌ ERROR: TELEGRAM_TOKEN tidak ditemukan di Secrets GitHub!")
+        return
+
+    # Tampilkan debug singkat (aman)
+    print(f"DEBUG: Token terbaca sepanjang {len(token)} karakter")
+    print(f"DEBUG: Awal token: {token[:4]}... Akhir token: ...{token[-4:]}")
     
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    data = {"chat_id": chat_id, "text": teks}
+    payload = {"chat_id": chat_id, "text": "Tes terakhir dari GitHub!"}
     
-    try:
-        response = requests.post(url, json=data)
-        if response.status_code == 200:
-            print("✅ BERHASIL: Pesan terkirim ke Telegram!")
-        else:
-            print(f"❌ GAGAL: Kode status {response.status_code}")
-            print(f"Pesan Error: {response.text}")
-    except Exception as e:
-        print(f"⚠️ ERROR SISTEM: {e}")
+    response = requests.post(url, json=payload)
+    print(f"HASIL: {response.status_code} - {response.text}")
 
 if __name__ == "__main__":
-    kirim_test()
+    debug_kirim()
+    
