@@ -6,7 +6,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 def jalankan_dedik_ai_autopilot_system():
-    print("🤖 Memulai Robot DEDIK AI Versi 3.4 (Sistem Kunci Presisi Utuh)...")
+    print("🤖 Memulai Robot DEDIK AI Versi 3.5 (Sistem JSON Bersih)...")
     
     token = "8949941557:AAGrK4Wx3FLV0FDpSLlxBCpklidh7Uh6wws"
     sheet_id = os.getenv('SPREADSHEET_ID') or os.getenv('ID_LEMBAR_KELIPATAN')
@@ -38,11 +38,11 @@ def jalankan_dedik_ai_autopilot_system():
     untung_bytes = harga_jual - harga_modal
 
     # ==========================================
-    # KONEKSI 1: GOOGLE SHEETS (KUNCI UTUH PRESISI NYATA)
+    # KONEKSI 1: GOOGLE SHEETS VIA STRUKTUR JSON BERSIH
     # ==========================================
     try:
-        # Menuliskan baris demi baris kunci asli tanpa ada karakter yang terpotong
-        pk = (
+        # Menyusun string kunci privat asli yang bersih tanpa modifikasi manual
+        kunci_privat_bersih = (
             "-----BEGIN PRIVATE KEY-----\n"
             "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC+65vUL236W2ag\n"
             "DMkoBdju1LP58jjcF0kykpilz6FPCmv6H+VdOXlsw9+21cP/7iSn2O3Ma7yi92At\n"
@@ -69,16 +69,16 @@ def jalankan_dedik_ai_autopilot_system():
             "mTqd+flQPdbWvvFP3DgOe7RJkMf3btMMiznnp0iqWrwKBgFoPCPNnznMPO/fDWAT\n"
             "F6BCseeptEMOVJX0qsLRUNrdFXOUj5L83TPxwarEkKPLzaidLzWm3bmhu6lnnSAS\n"
             "hTd+vUZto+atwI/UzZBftpYhMajv+5i/+67tP14dnRjC5sdC0hNOZB9SjkD4cDcB\n"
-            "G0tyMSBGPs0ycLGFBELd0UZmCg==\n"
+            "G0tyMSBGPs0ycLGFBELd0UZmC\n"
             "-----END PRIVATE KEY-----\n"
         )
 
-        # Struktur Json Akun Layanan GCP Resmi
-        info_kunci = {
+        # Kamus data kredensial lengkap akun GCP
+        data_kredensial = {
             "type": "service_account",
             "project_id": "winged-scout-467517-c5",
             "private_key_id": "a9d3c4a27c99bd6597b347a281d23791d866bcf5",
-            "private_key": pk,
+            "private_key": kunci_privat_bersih,
             "client_email": "opick-ai-bot@winged-scout-467517-c5.iam.gserviceaccount.com",
             "client_id": "117579405054256940875",
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -89,7 +89,9 @@ def jalankan_dedik_ai_autopilot_system():
         }
         
         scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-        creds = Credentials.from_service_account_info(info_kunci, scopes=scopes)
+        
+        # Memuat menggunakan from_service_account_info secara langsung tanpa parsing teks lagi
+        creds = Credentials.from_service_account_info(data_kredensial, scopes=scopes)
         client = gspread.authorize(creds)
         
         sheet = client.open_by_key(sheet_id).sheet1
@@ -102,7 +104,7 @@ def jalankan_dedik_ai_autopilot_system():
     # KONEKSI 2: TEMBAK LAPORAN KE TELEGRAM
     # ==========================================
     pesan_telegram = (
-        f"🚀 *LAPORAN TERBARU DEDIK AI (V3.4)*\n\n"
+        f"🚀 *LAPORAN TERBARU DEDIK AI (V3.5)*\n\n"
         f"📅 *Waktu:* {waktu_skrg}\n"
         f"📦 *Produk:* {nama_barang}\n"
         f"💰 *Harga Modal:* Rp {harga_modal:,}\n"
