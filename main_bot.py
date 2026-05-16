@@ -6,17 +6,17 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 def jalankan_dedik_ai_autopilot_system():
-    print("🤖 Memulai Robot DEDIK AI Versi Terbaru...")
+    print("🤖 Memulai Robot DEDIK AI Versi 3.2 (Sistem Kunci Langsung)...")
     
     token = "8949941557:AAGrK4Wx3FLV0FDpSLlxBCpklidh7Uh6wws"
-    gcp_json = os.getenv('GCP_CREDENTIALS') or os.getenv('KREDENSIAL GCP')
+    private_key_raw = os.getenv('GCP_CREDENTIALS') or os.getenv('KREDENSIAL GCP')
     sheet_id = os.getenv('SPREADSHEET_ID') or os.getenv('ID_LEMBAR_KELIPATAN')
 
-    if not all([gcp_json, sheet_id]):
+    if not all([private_key_raw, sheet_id]):
         print("❌ Konfigurasi SPREADSHEET_ID atau GCP_CREDENTIALS di GitHub Secrets masih kosong!")
         return
 
-    # 1. AMBIL CHAT ID OTOMATIS
+    # 1. AMBIL CHAT ID TELEGRAM OTOMATIS
     url_updates = f"https://api.telegram.org/bot{token}/getUpdates"
     chat_id = None
     try:
@@ -26,7 +26,7 @@ def jalankan_dedik_ai_autopilot_system():
                 if "message" in update:
                     chat_id = update["message"]["chat"]["id"]
                     break
-    except Exception as e:
+    except:
         pass
 
     if not chat_id:
@@ -39,21 +39,32 @@ def jalankan_dedik_ai_autopilot_system():
     untung_bytes = harga_jual - harga_modal
 
     # ==========================================
-    # KONEKSI 1: TEMBAK DATA KE GOOGLE SHEETS (AUTO FIX PEM)
+    # KONEKSI 1: GOOGLE SHEETS (SISTEM STRUKTUR OTOMATIS)
     # ==========================================
     try:
-        info_kunci = json.loads(gcp_json)
-        
-        # Perbaikan otomatis untuk error "Unable to load PEM file" akibat copy-paste HP
-        if "private_key" in info_kunci:
-            pk = info_kunci["private_key"]
-            if "\\n" not in pk and "\n" not in pk:
-                # Jika kunci menyatu satu baris rapi, kita pecah otomatis per 64 karakter
-                body = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").replace(" ", "").strip()
-                chunks = [body[i:i+64] for i in range(0, len(body), 64)]
-                info_kunci["private_key"] = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(chunks) + "\n-----END PRIVATE KEY-----\n"
-            elif "\\n" in pk:
-                info_kunci["private_key"] = pk.replace("\\n", "\n")
+        # Merapikan karakter enter kunci privat secara otomatis jika menyatu saat disimpan
+        pk = private_key_raw.strip()
+        if "\\n" in pk:
+            pk = pk.replace("\\n", "\n")
+        elif "\n" not in pk:
+            body = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").replace(" ", "").strip()
+            chunks = [body[i:i+64] for i in range(0, len(body), 64)]
+            pk = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(chunks) + "\n-----END PRIVATE KEY-----\n"
+
+        # Menyusun kamus kredensial langsung secara internal tanpa JSON luar
+        info_kunci = {
+            "type": "service_account",
+            "project_id": "winged-scout-467517-c5",
+            "private_key_id": "a9d3c4a27c99bd6597b347a281d23791d866bcf5",
+            "private_key": pk,
+            "client_email": "opick-ai-bot@winged-scout-467517-c5.iam.gserviceaccount.com",
+            "client_id": "117579405054256940875",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/opick-ai-bot%40winged-scout-467517-c5.iam.gserviceaccount.com",
+            "universe_domain": "googleapis.com"
+        }
         
         scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
         creds = Credentials.from_service_account_info(info_kunci, scopes=scopes)
@@ -69,13 +80,13 @@ def jalankan_dedik_ai_autopilot_system():
     # KONEKSI 2: TEMBAK LAPORAN KE TELEGRAM
     # ==========================================
     pesan_telegram = (
-        f"🚀 *LAPORAN TERBARU DEDIK AI (V3)*\n\n"
+        f"🚀 *LAPORAN TERBARU DEDIK AI (V3.2)*\n\n"
         f"📅 *Waktu:* {waktu_skrg}\n"
         f"📦 *Produk:* {nama_barang}\n"
         f"💰 *Harga Modal:* Rp {harga_modal:,}\n"
         f"💸 *Harga Jual:* Rp {harga_jual:,}\n"
         f"📈 *Profit Bersih:* Rp {untung_bytes:,}\n\n"
-        f"Sistem Autopilot Berjalan Sempurna! 🦾"
+        f"Sistem Autopilot Google Sheets & Telegram Berjalan Sempurna! 🦾"
     )
     
     url_telegram = f"https://api.telegram.org/bot{token}/sendMessage"
