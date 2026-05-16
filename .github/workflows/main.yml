@@ -1,32 +1,33 @@
-name: Dedik AI Robot Otomatis
+name: DEDIK AI Autopilot 24 Jam
 
 on:
+  # 1. Memicu robot agar berjalan otomatis setiap 1 jam sekali (24 jam nonstop)
   schedule:
-    # Berjalan otomatis setiap jam 00:00 UTC (07:00 WIB)
-    - cron: '0 0 * * *'
-    # Berjalan otomatis setiap jam 12:00 UTC (19:00 WIB)
-    - cron: '0 12 * * *'
-  workflow_dispatch: # Tombol manual tetap ada untuk jaga-jaga
+    - cron: '0 * * * *'
+  
+  # 2. Tombol manual tetap ada sebagai cadangan jika ingin tes kapan saja
+  workflow_dispatch:
 
 jobs:
-  eksekusi:
+  run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Ambil Kode
+      - name: Menghubungkan Kode Source
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Menyiapkan Python Server
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install Pustaka
-        run: pip install requests gspread oauth2client
+      - name: Menginstal Pipa Penghubung (Library)
+        run: |
+          pip install requests gspread oauth2client
 
-      - name: Jalankan Bot
+      - name: Eksekusi Robot Dedik AI
         env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          KREDENSIAL_GCP: ${{ secrets.GCP_CREDENTIALS }}
-          ID_LEMBAR_KELIPATAN: ${{ secrets.SPREADSHEET_ID }}
+          TOKEN_TELEGRAM: ${{ secrets.TOKEN_TELEGRAM }}
+          CHAT_ID_TELEGRAM: ${{ secrets.CHAT_ID_TELEGRAM }}
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: python main_bot.py
