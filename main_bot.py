@@ -1,65 +1,85 @@
 import os
+import json
 import requests
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import json
-import random
+from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 def jalankan_dedik_ai_autopilot_system():
-    print("🤖 Memulai Robot DEDIK AI...")
+    print("🤖 Memulai Robot DEDIK AI Versi Terbaru...")
     
     # 1. Mengambil Kunci Rahasia dari GitHub Secrets
-    token = os.getenv('TOKEN_TELEGRAM') or os.getenv('TELEGRAM_TOKEN')
-    chat_id = os.getenv('CHAT_ID_TELEGRAM') or os.getenv('TELEGRAM_CHAT_ID') or os.getenv('ID_CHAT_TELEGRAM')
+    token = "8949941557:AAGrK4Wx3FLV0FDpSLlxBCpklidh7Uh6wws"  # Token Baru Langsung Dipasang di Sini
     gcp_json = os.getenv('GCP_CREDENTIALS') or os.getenv('KREDENSIAL GCP')
     sheet_id = os.getenv('SPREADSHEET_ID') or os.getenv('ID_LEMBAR_KELIPATAN')
 
-    if not all([token, chat_id, gcp_json, sheet_id]):
-        print("❌ Konfigurasi GitHub Secrets belum lengkap atau nama tidak cocok!")
+    if not all([gcp_json, sheet_id]):
+        print("❌ Konfigurasi SPREADSHEET_ID atau GCP_CREDENTIALS di GitHub Secrets masih kosong!")
         return
 
-    # Data Produk yang akan dimasukkan ke laporan
+    # 2. SISTEM OTOMATIS MENCARI CHAT ID (ANTI EROR 400)
+    print("🔍 Mencari Chat ID kamu secara otomatis ke server Telegram...")
+    url_updates = f"https://api.telegram.org/bot{token}/getUpdates"
+    chat_id = None
+    
+    try:
+        respon_update = requests.get(url_updates).json()
+        if respon_update.get("ok") and respon_update.get("result"):
+            # Mengambil ID chat terakhir yang mengirim pesan /start ke bot ini
+            for update in reversed(respon_update["result"]):
+                if "message" in update:
+                    chat_id = update["message"]["chat"]["id"]
+                    break
+    except Exception as e:
+        print(f"⚠️ Gagal membaca update otomatis: {e}")
+
+    # Jika pencarian otomatis gagal, gunakan cadangan ID asli kamu kemarin
+    if not chat_id:
+        print("⚠️ Bot belum mendeteksi pesan masuk. Menggunakan ID cadangan: 8293172022")
+        chat_id = "8293172022"
+    else:
+        print(f"🎯 BERHASIL KETEMU: Mengirim laporan ke Chat ID: {chat_id}")
+
+    waktu_skrg = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     nama_barang = "Stiker Anti Fog Kaca Spion"
     harga_modal = 5000
     harga_jual = 45928
-    untung_bersih = harga_jual - harga_modal
-    waktu_skrg = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    untung_bytes = harga_jual - harga_modal
 
     # ==========================================
-    # KONEKSI INTERNET ASLI 1: TEMBAK KE GOOGLE SHEETS
+    # KONEKSI 1: TEMBAK DATA KE GOOGLE SHEETS
     # ==========================================
     try:
-        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        kredensial_dict = json.loads(gcp_json)
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(kredensial_dict, scope)
+        info_kunci = json.loads(gcp_json)
+        if "private_key" in info_kunci and "\\n" not in info_kunci["private_key"]:
+            info_kunci["private_key"] = info_kunci["private_key"].replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n").replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----")
+        
+        scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+        creds = Credentials.from_service_account_info(info_kunci, scopes=scopes)
         client = gspread.authorize(creds)
         
-        # Membuka Google Sheets berdasarkan SPREADSHEET_ID
         sheet = client.open_by_key(sheet_id).sheet1
-        
-        # Menulis baris data baru ke Sheets kamu
-        sheet.append_row([waktu_skrg, nama_barang, harga_modal, harga_jual, untung_bersih])
+        sheet.append_row([waktu_skrg, nama_barang, harga_modal, harga_jual, untung_bytes])
         print("✅ BERHASIL: Data sukses terketik di Google Sheets!")
     except Exception as e:
         print(f"❌ GAGAL MASUK KE GOOGLE SHEETS: {e}")
 
     # ==========================================
-    # KONEKSI INTERNET ASLI 2: TEMBAK LAPORAN KE TELEGRAM
+    # KONEKSI 2: TEMBAK LAPORAN KE TELEGRAM
     # ==========================================
     pesan_telegram = (
-        f"🚀 *LAPORAN TERBARU DEDIK AI*\n\n"
+        f"🚀 *LAPORAN TERBARU DEDIK AI (V3)*\n\n"
         f"📅 *Waktu:* {waktu_skrg}\n"
         f"📦 *Produk:* {nama_barang}\n"
         f"💰 *Harga Modal:* Rp {harga_modal:,}\n"
         f"💸 *Harga Jual:* Rp {harga_jual:,}\n"
-        f"📈 *Profit Bersih:* Rp {untung_bersih:,}\n\n"
-        f"Sistem Autopilot Sukses Menulis ke Sheets! 🦾"
+        f"📈 *Profit Bersih:* Rp {untung_bytes:,}\n\n"
+        f"Sistem Baru Sukses Menulis ke Sheets! 🦾"
     )
     
     url_telegram = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
-        "chat_id": chat_id,
+        "chat_id": str(chat_id),
         "text": pesan_telegram,
         "parse_mode": "Markdown"
     }
