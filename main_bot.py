@@ -6,7 +6,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 
 def jalankan_dedik_ai_autopilot_system():
-    print("🤖 Memulai Robot DEDIK AI Versi 3.3 (Kunci Kredensial Statis)...")
+    print("🤖 Memulai Robot DEDIK AI Versi 3.4 (Sistem Kunci Presisi Utuh)...")
     
     token = "8949941557:AAGrK4Wx3FLV0FDpSLlxBCpklidh7Uh6wws"
     sheet_id = os.getenv('SPREADSHEET_ID') or os.getenv('ID_LEMBAR_KELIPATAN')
@@ -38,10 +38,10 @@ def jalankan_dedik_ai_autopilot_system():
     untung_bytes = harga_jual - harga_modal
 
     # ==========================================
-    # KONEKSI 1: GOOGLE SHEETS DENGAN KUNCI TETAP (ANTI ERROR COPASTE)
+    # KONEKSI 1: GOOGLE SHEETS (KUNCI UTUH PRESISI NYATA)
     # ==========================================
     try:
-        # Menyusun baris kunci privat yang rapi secara langsung di dalam program
+        # Menuliskan baris demi baris kunci asli tanpa ada karakter yang terpotong
         pk = (
             "-----BEGIN PRIVATE KEY-----\n"
             "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC+65vUL236W2ag\n"
@@ -69,11 +69,11 @@ def jalankan_dedik_ai_autopilot_system():
             "mTqd+flQPdbWvvFP3DgOe7RJkMf3btMMiznnp0iqWrwKBgFoPCPNnznMPO/fDWAT\n"
             "F6BCseeptEMOVJX0qsLRUNrdFXOUj5L83TPxwarEkKPLzaidLzWm3bmhu6lnnSAS\n"
             "hTd+vUZto+atwI/UzZBftpYhMajv+5i/+67tP14dnRjC5sdC0hNOZB9SjkD4cDcB\n"
-            "G0tyMSBGPs0ycLGFBELd0UZmC\n"
+            "G0tyMSBGPs0ycLGFBELd0UZmCg==\n"
             "-----END PRIVATE KEY-----\n"
         )
 
-        # Kamus akun layanan Google Cloud Platform (GCP)
+        # Struktur Json Akun Layanan GCP Resmi
         info_kunci = {
             "type": "service_account",
             "project_id": "winged-scout-467517-c5",
@@ -102,7 +102,7 @@ def jalankan_dedik_ai_autopilot_system():
     # KONEKSI 2: TEMBAK LAPORAN KE TELEGRAM
     # ==========================================
     pesan_telegram = (
-        f"🚀 *LAPORAN TERBARU DEDIK AI (V3.3)*\n\n"
+        f"🚀 *LAPORAN TERBARU DEDIK AI (V3.4)*\n\n"
         f"📅 *Waktu:* {waktu_skrg}\n"
         f"📦 *Produk:* {nama_barang}\n"
         f"💰 *Harga Modal:* Rp {harga_modal:,}\n"
@@ -125,4 +125,3 @@ def jalankan_dedik_ai_autopilot_system():
 
 if __name__ == "__main__":
     jalankan_dedik_ai_autopilot_system()
-                    
