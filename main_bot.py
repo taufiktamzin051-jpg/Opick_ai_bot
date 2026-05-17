@@ -9,11 +9,31 @@ def dedikai_uploader_system():
     CHAT_ID = os.environ.get('CHAT_ID')
     url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     
-    # 1. KONEKSI KE GUDANG DATABASE
+    # 1. KONEKSI & PASTIKAN RAK DATABASE DIBUAT DULU (Biar Anti Amnesia!)
     koneksi = sqlite3.connect("gudang_dropship.db")
     cursor = koneksi.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS produk_siap_jual (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            judul TEXT,
+            harga_modal INTEGER,
+            harga_jual INTEGER,
+            status_upload TEXT
+        )
+    ''')
+    koneksi.commit()
     
-    # 2. AMBIL BARANG YANG STATUSNYA BELUM DI-UPLOAD
+    # 2. ISI DATA SAMPEL OTOMATIS JIKA GUDANG MASIH KOSONG
+    judul_barang_baru = "🔥 [BISA COD] Kabel Data Gaming Fast Charging Type C Anti Putus Original"
+    cursor.execute("SELECT * FROM produk_siap_jual WHERE judul=?", (judul_barang_baru,))
+    if cursor.fetchone() is None:
+        cursor.execute(
+            "INSERT INTO produk_siap_jual (judul, harga_modal, harga_jual, status_upload) VALUES (?, ?, ?, ?)",
+            (judul_barang_baru, 12500, 27500, "BELUM_UPLOAD")
+        )
+        koneksi.commit()
+    
+    # 3. AMBIL BARANG YANG STATUSNYA BELUM DI-UPLOAD
     cursor.execute("SELECT id, judul, harga_jual FROM produk_siap_jual WHERE status_upload='BELUM_UPLOAD' LIMIT 1")
     produk = cursor.fetchone()
     
@@ -38,7 +58,7 @@ def dedikai_uploader_system():
         
     koneksi.close()
     
-    # 3. KIRIM LAPORAN AKHIR KE DEDIK AI BOT (Struktur Teks Sudah Diperbaiki)
+    # 4. KIRIM LAPORAN AKHIR KE DEDIK AI BOT
     pesan_tele = (
         f"🤖 *DEDIK AI - MODUL 6: UPLOADER ENGINE ONLINE*\n"
         f"━━━━━━━━━━━━━━━━━━━\n"
