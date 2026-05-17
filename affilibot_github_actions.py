@@ -1,8 +1,8 @@
 import os
 import requests
-import google.generativeai as genai
+from google import genai
 
-# 1. SETUP KONFIGURASI
+# Setup Konfigurasi
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
@@ -17,23 +17,24 @@ def kirim_telegram(pesan):
 
 def jalankan_robot_affiliate():
     print("Mulai menjalankan robot...")
-    
     if not GEMINI_KEY:
         kirim_telegram("❌ Kunci GEMINI_API_KEY tidak ditemukan di Secrets!")
         return
 
     try:
-        # Menggunakan model terbaru & paling stabil
-        genai.configure(api_key=GEMINI_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Menggunakan Client baru dari paket google-genai (Anti 404)
+        client = genai.Client(api_key=GEMINI_KEY)
         
         prompt = (
             "Berikan 1 ide produk rekomendasi unik yang berguna untuk rumah tangga. "
-            "Buatlah caption promosi pendek yang menarik dan sertakan emoji. "
+            "Buatlah caption promosi pendek yang menarik di Twitter dan sertakan emoji. "
             "Sediakan teks '[LINK_PRODUK]' di bagian paling akhir."
         )
         
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+        )
         caption_hasil = response.text
         
         link_affiliate = "https://amzn.to/3WbXyz"
