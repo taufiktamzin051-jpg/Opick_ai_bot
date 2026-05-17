@@ -1,8 +1,7 @@
 import os
 import requests
-from google import genai
 
-# Setup Konfigurasi
+# 1. SETUP KONFIGURASI
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
@@ -21,21 +20,28 @@ def jalankan_robot_affiliate():
         kirim_telegram("❌ Kunci GEMINI_API_KEY tidak ditemukan di Secrets!")
         return
 
+    # KUNCI ANTI-GAGAL: Menggunakan API Web Langsung tanpa Library Google
+    url_gemini = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+    headers = {"Content-Type": "application/json"}
+    
+    prompt = (
+        "Berikan 1 ide produk rekomendasi unik yang berguna untuk rumah tangga. "
+        "Buatlah caption promosi pendek yang menarik di Twitter dan sertakan emoji. "
+        "Sediakan teks '[LINK_PRODUK]' di bagian paling akhir."
+    )
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+
     try:
-        # Menggunakan Client baru dari paket google-genai (Anti 404)
-        client = genai.Client(api_key=GEMINI_KEY)
+        response = requests.post(url_gemini, headers=headers, json=payload)
+        response_data = response.json()
         
-        prompt = (
-            "Berikan 1 ide produk rekomendasi unik yang berguna untuk rumah tangga. "
-            "Buatlah caption promosi pendek yang menarik di Twitter dan sertakan emoji. "
-            "Sediakan teks '[LINK_PRODUK]' di bagian paling akhir."
-        )
-        
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt,
-        )
-        caption_hasil = response.text
+        # Mengambil teks hasil generate AI
+        caption_hasil = response_data['candidates'][0]['content']['parts'][0]['text']
         
         link_affiliate = "https://amzn.to/3WbXyz"
         caption_final = caption_hasil.replace("[LINK_PRODUK]", link_affiliate)
