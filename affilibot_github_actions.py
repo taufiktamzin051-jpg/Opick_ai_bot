@@ -1,7 +1,5 @@
-
 import os
 import requests
-from bs4 import BeautifulSoup
 import google.generativeai as genai
 import tweepy
 
@@ -27,20 +25,18 @@ def kirim_telegram(pesan):
 def jalankan_robot_affiliate():
     print("Robot Affiliate Global Mulai Bekerja...")
     
-    # Pastikan API Key Gemini ada
     if not GEMINI_KEY:
         kirim_telegram("❌ Robot Berhenti: GEMINI_API_KEY belum diisi di GitHub Secrets!")
         return
         
     try:
-        # Inisialisasi AI Gemini
+        # Menggunakan model terbaru agar tidak error 404 lagi
         genai.configure(api_key=GEMINI_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # PROMPT UTAMA: Menyuruh AI mencari ide & membuat caption konten affiliate hangat/viral
         prompt = (
             "Berikan 1 ide produk rekomendasi luar negeri yang sedang tren atau sangat berguna untuk rumah tangga/gadget. "
-            "Buatlah caption promosi X (Twitter) yang sangat menarik, interaktif, soft-selling, dan sertasikan emoji. "
+            "Buatlah caption promosi X (Twitter) yang sangat menarik, interaktif, soft-selling, dan sertakan emoji. "
             "Berikan ruang kosong di akhir caption dengan teks '[LINK_PRODUK]' agar saya bisa menaruh link affiliate nanti. "
             "Jangan berikan teks tambahan, cukup berikan caption siap tweet saja."
         )
@@ -48,14 +44,14 @@ def jalankan_robot_affiliate():
         response = model.generate_content(prompt)
         caption_hasil_ai = response.text
         
-        # Simulasi link affiliate (bisa Anda ganti nanti sesuai network affiliate Anda)
+        # Simulasi link affiliate
         link_affiliate = "https://amzn.to/3WbXyz" 
         caption_final = caption_hasil_ai.replace("[LINK_PRODUK]", link_affiliate)
         
         print("\n--- HASIL CAPTION GEMINI AI ---")
         print(caption_final)
         
-        # 4. POSTING OTOMATIS KE TWITTER/X (Jika kredensial lengkap)
+        # 4. POSTING OTOMATIS KE TWITTER/X (Opsional)
         if X_API_KEY and X_API_SECRET and X_ACCESS_TOKEN and X_ACCESS_SECRET:
             client = tweepy.Client(
                 consumer_key=X_API_KEY, consumer_secret=X_API_SECRET,
