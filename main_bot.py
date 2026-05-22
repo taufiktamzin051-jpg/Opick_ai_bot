@@ -20,14 +20,10 @@ headers_web = {
 }
 
 def convert_ke_link_cuan(link_mentah):
-    print(f"🔗 Mencoba mengonversi link: {link_mentah[:40]}...")
     if not INVOLVE_API_KEY or not INVOLVE_SECRET_KEY:
-        print("⚠️ Kunci Involve Asia belum lengkap di GitHub Secrets, menggunakan link asli.")
         return link_mentah
 
-    # API resmi Involve Asia untuk membuat link afiliasi otomatis
     url_api = "https://api.involve.asia/api/v1/deeplink/generate"
-    
     payload = {
         "api_key": INVOLVE_API_KEY,
         "secret_key": INVOLVE_SECRET_KEY,
@@ -37,25 +33,33 @@ def convert_ke_link_cuan(link_mentah):
     try:
         respon = requests.post(url_api, json=payload, timeout=15)
         data = respon.json()
-        
-        # Jika sukses, ambil link afiliasi barunya
         if respon.status_code == 200 and data.get("status") == "success":
-            link_afiliasi = data.get("generated_url")
-            print("✅ Link berhasil diubah menjadi LINK CUAN!")
-            return link_afiliasi
-        else:
-            print(f"⚠️ Gagal convert API: {data.get('message', 'Eror tidak diketahui')}")
-            return link_mentah
-    except Exception as e:
-        print(f"❌ Terjadi gangguan server API Involve Asia: {e}")
+            return data.get("generated_url")
+        return link_mentah
+    except:
         return link_mentah
 
-def ekstrak_link_asli(teks):
+def proses_dan_ubah_semua_link(teks, url_grup):
+    # Cari semua link di dalam teks asli
     links = re.findall(r'(https?://[^\s]+)', teks)
+    link_terubah = None
+    
     for link in links:
-        if "shopee.co.id" in link or "tokopedia.com" in link or "tokopedia.link" in link:
-            return link
-    return None
+        # Cek apakah ini link marketplace yang mau di-convert
+        if any(x in link for x in ["shopee.co.id", "tokopedia.com", "tokopedia.link", "onelink.me"]):
+            link_cuan = convert_ke_link_cuan(link)
+            teks = teks.replace(link, link_cuan)
+            link_terubah = link_cuan
+            
+    # JIKA TIDAK ADA LINK SAMA SEKALI DI TEKS:
+    # Setel link cadangan otomatis menyesuaikan asal grupnya agar tidak tertukar
+    if not link_terubah:
+        if "tokoped" in url_grup:
+            link_terubah = "https://www.tokopedia.com"
+        else:
+            link_terubah = "https://shopee.co.id"
+            
+    return teks, link_terubah
 
 def intip_grup_kompetitor(url_grup):
     nama_grup = url_grup.split("/")[-1]
@@ -64,46 +68,37 @@ def intip_grup_kompetitor(url_grup):
         url_preview = f"https://t.me/s/{nama_grup}"
         respon = requests.get(url_preview, headers=headers_web, timeout=15)
         sup = BeautifulSoup(respon.text, 'html.parser')
-        
         pesan_pesan = sup.find_all("div", {"class": "tgme_widget_message_text"})
         
         if pesan_pesan:
             pesan_terakhir = pesan_pesan[-1].text.strip()
-            print(f"📝 Konten berhasil disalin dari {nama_grup}!")
-            link_produk = ekstrak_link_asli(pesan_terakhir)
-            return pesan_terakhir, link_produk
-        else:
-            print(f"❌ Tidak bisa membaca pesan di grup {nama_grup}")
-            return None, None
-        
+            return pesan_terakhir
+        return None
     except Exception as e:
         print(f"❌ Gagal mengintai grup {nama_grup}: {e}")
-        return None, None
+        return None
 
 if __name__ == "__main__":
-    print("=== ROBOT PENGINTAI + AUTO CUAN START ===")
+    print("=== ROBOT PENGINTAI FIX CHAT ID + LOGIKA CADANGAN START ===")
     
     if not TOKEN or not ID_CHAT:
         print("❌ Eror: Token atau Chat ID tidak lengkap!")
         exit(1)
         
     for grup in GRUP_TARGET:
-        konten_pesan, link_asal = intip_grup_kompetitor(grup)
+        pesan_raw = intip_grup_kompetitor(grup)
         
-        if konten_pesan:
-            # Jika ada link produk, otomatis ubah lewat Involve Asia
-            if link_asal:
-                link_final = convert_ke_link_cuan(link_asal)
-            else:
-                link_final = "https://tokopedia.com" if "tokoped" in grup else "https://shopee.co.id"
+        if pesan_raw:
+            # Olah teks dan ubah semua link mentah yang ada di dalamnya
+            pesan_final, link_tombol = proses_dan_ubah_semua_link(pesan_raw, grup)
             
             url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
             sumber = "TOKOPEDIA HITS" if "tokoped" in grup else "SHOPEE VIRAL"
             
             pesan_kirim = (
                 f"🔥 REKOMENDASI {sumber} 🔥\n\n"
-                f"{konten_pesan}\n\n"
-                f"🛍️ Miliki Produknya Sekarang Di Sini: \n{link_final}"
+                f"{pesan_final}\n\n"
+                f"🛍️ Miliki Produknya Sekarang Di Sini: \n{link_tombol}"
             )
             
             payload = {
@@ -113,8 +108,8 @@ if __name__ == "__main__":
             
             kirim = requests.post(url_tele, json=payload, timeout=15)
             if kirim.status_code == 200:
-                print(f"🚀 Sukses meneruskan postingan ber-afiliasi dari {grup.split('/')[-1]}!")
+                print(f"🚀 Sukses mengirim postingan ber-afiliasi ke ID: {ID_CHAT}")
             else:
-                print(f"❌ Gagal kirim ke Telegram: {kirim.text}")
+                print(f"❌ Gagal kirim: {kirim.text}")
             
-    print("=== SEMUA PROSES PENGINTAIAN SELESAI ===")
+    print("=== SEMUA PROSES SELESAI ===")
