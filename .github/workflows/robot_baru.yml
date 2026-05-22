@@ -1,9 +1,9 @@
-name: Auto Pilot Affiliate Involve Asia
+name: Robot Afiliasi Tokopedia Baru
 
 on:
   schedule:
-    - cron: '0 * * * *' # Jalan otomatis setiap 1 jam
-  workflow_dispatch: # TOMBOL RAHASIA UNTUK JALAN MANUAL
+    - cron: '0 * * * *' # Otomatis jalan setiap 1 jam
+  workflow_dispatch: # Tombol manual
 
 jobs:
   run-bot:
@@ -19,12 +19,10 @@ jobs:
 
       - name: Instal Bahan Pendukung
         run: |
-          pip install requests
+          pip install requests beautifulsoup4
 
       - name: Nyalakan Robot Afiliasi
         env:
-          INVOLVE_API_KEY: ${{ secrets.INVOLVE_API_KEY }}
-          INVOLVE_API_SECRET: ${{ secrets.INVOLVE_API_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python affilibot.py
+        run: python main_bot.py
