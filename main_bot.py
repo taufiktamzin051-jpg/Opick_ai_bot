@@ -29,7 +29,6 @@ def intip_grup_kompetitor(url_grup):
     nama_grup = url_grup.split("/")[-1]
     print(f"🕵️‍♂️ Robot sedang mengintai grup: {nama_grup}")
     try:
-        # Mengambil halaman web preview grup Telegram publik
         respon = requests.get(url_grup, headers=judul, timeout=15)
         sup = BeautifulSoup(respon.text, 'html.parser')
         
@@ -40,10 +39,8 @@ def intip_grup_kompetitor(url_grup):
             print(f"📭 Tidak ditemukan pesan baru di grup {nama_grup}.")
             return None, None
             
-        # Ambil pesan paling terbaru (paling bawah)
+        # Ambil pesan paling terbaru
         pesan_terakhir = pesan_pesan[-1].text.strip()
-        print(f"📝 Konten berhasil dicuri: {pesan_terakhir[:50]}...")
-        
         link_produk = ekstrak_link_asli(pesan_terakhir)
         return pesan_terakhir, link_produk
         
@@ -55,37 +52,37 @@ if __name__ == "__main__":
     print("=== ROBOT PENGINTAI MULTI-MARKETPLACE START ===")
     
     if not TOKEN or not ID_CHAT:
-        print("❌ Eror: Token Telegram atau Chat ID belum lengkap di GitHub Secrets!")
+        print("❌ Eror: Token/Chat ID tidak ada!")
         exit(1)
         
     for grup in GRUP_TARGET:
         konten_pesan, link_asal = intip_grup_kompetitor(grup)
         
         if konten_pesan:
-            # Jika tidak ada link spesifik, arahkan ke halaman utama masing-masing
             if not link_asal:
                 link_final = "https://tokopedia.com" if "tokoped" in grup else "https://shopee.co.id"
             else:
                 link_final = link_asal
             
             url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+            sumber = "TOKOPEDIA HITS" if "tokoped" in grup else "SHOPEE VIRAL"
             
-            # Deteksi label asal grup untuk mempercantik tampilan
-            sumber = "TOKOPEDIA HITS 🟢" if "tokoped" in grup else "SHOPEE VIRAL 🟠"
-            
+            # Format pesan teks biasa (Menghapus Markdown agar tidak gampang eror)
             pesan_kirim = (
-                f"🔥 *REKOMENDASI {sumber}* 🔥\n\n"
+                f"🔥 REKOMENDASI {sumber} 🔥\n\n"
                 f"{konten_pesan}\n\n"
-                f"🛍️ *Miliki Produknya Sekarang Di Sini:* \n{link_final}"
+                f"🛍️ Miliki Produknya Sekarang Di Sini: \n{link_final}"
             )
             
             payload = {
                 "chat_id": ID_CHAT,
-                "text": pesan_kirim,
-                "parse_mode": "Markdown"
+                "text": pesan_kirim
             }
             
-            requests.post(url_tele, json=payload, timeout=15)
-            print(f"🚀 Sukses memposting ulang hasil intaian dari grup {grup.split('/')[-1]}!")
+            kirim = requests.post(url_tele, json=payload, timeout=15)
+            if kirim.status_code == 200:
+                print(f"🚀 Sukses kirim dari grup {grup.split('/')[-1]}!")
+            else:
+                print(f"❌ Telegram menolak pesan: {kirim.text}")
             
     print("=== SEMUA PROSES PENGINTAIAN SELESAI ===")
