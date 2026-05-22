@@ -17,6 +17,8 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 IA_API_KEY = os.getenv("INVOLVE_ASIA_API_KEY")
 IA_SECRET_KEY = os.getenv("INVOLVE_ASIA_SECRET_KEY")
 
+FILE_ID_PENGINGAT = "terakhir_id.txt"
+
 # =========================================================================
 # 🚀 2. FUNGSI UNTUK MENGIRIM POSTINGAN KE TWITTER (X)
 # =========================================================================
@@ -33,9 +35,7 @@ def kirim_ke_twitter(teks_postingan):
             access_token_secret=TWITTER_ACCESS_TOKEN_SECRET
         )
         
-        # Batasi panjang karakter Twitter (Maksimal 280)
         teks_tweet = teks_postingan[:270] + "..." if len(teks_postingan) > 275 else teks_postingan
-            
         client.create_tweet(text=teks_tweet)
         print("🐦 [Twitter] BERHASIL! Tweet produk sudah meluncur ke profil X Anda.")
     except Exception as e:
@@ -80,7 +80,7 @@ def konversi_ke_link_afiliasi(link_asli):
     return link_asli
 
 # =========================================================================
-# 🧠 5. PROSES UTAMA ROBOT MEMBACA PESAN MASUK
+# 🧠 5. PROSES UTAMA ROBOT DENGAN PENYARINGAN DUPLIKAT
 # =========================================================================
 def jalankan_bot_proses():
     print("⚡ MEMERIKSA PESAN TERBARU DARI BOT...")
@@ -95,7 +95,18 @@ def jalankan_bot_proses():
         # Ambil pesan paling terakhir yang masuk ke bot
         pesan_terakhir = respon["result"][-1]
         
-        # Cek apakah itu pesan teks biasa atau pesan teruskan (forward)
+        # Ambil ID unik pesan tersebut
+        update_id_sekarang = str(pesan_terakhir["update_id"])
+
+        # Cek apakah ID ini sudah pernah diproses sebelumnya
+        if os.path.exists(FILE_ID_PENGINGAT):
+            with open(FILE_ID_PENGINGAT, "r") as f:
+                id_lama = f.read().strip()
+            if update_id_sekarang == id_lama:
+                print("🛑 [INFO] Postingan ini sudah pernah dikirim sebelumnya. Skip biar gak spam!")
+                return
+
+        # Ambil konten teks pesat
         if "message" in pesan_terakhir:
             teks_asal = pesan_terakhir["message"].get("text", "")
         elif "channel_post" in pesan_terakhir:
@@ -108,7 +119,7 @@ def jalankan_bot_proses():
         
         if cari_link:
             link_asli = cari_link[0]
-            print(f"\n🔗 Link Produk Ditemukan: {link_asli}")
+            print(f"\n🔗 Link Produk Baru Ditemukan: {link_asli}")
             
             link_cuan = konversi_ke_link_afiliasi(link_asli)
             teks_bersih = teks_asal.replace(link_asli, "").strip()
@@ -117,11 +128,15 @@ def jalankan_bot_proses():
                 
             format_postingan = f"{teks_bersih}\n\n👉 Klik Belanja di Sini: {link_cuan}"
             
-            # Duet maut sebar ke sosmed
+            # Kirim ke Telegram Channel & Twitter
             kirim_ke_telegram(format_postingan)
             kirim_ke_twitter(format_postingan)
+            
+            # Catat ID unik ini agar tidak diulang pada pemicuan berikutnya
+            with open(FILE_ID_PENGINGAT, "w") as f:
+                f.write(update_id_sekarang)
         else:
-            print("ℹ️ Pesan masuk tidak mengandung link belanja Shopee/Tokopedia. Diabaikan.")
+            print("ℹ️ Pesan masuk tidak mengandung link belanja. Diabaikan.")
             
     except Exception as e:
         print(f"❌ Terjadi gangguan sistem: {e}")
