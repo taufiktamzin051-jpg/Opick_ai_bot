@@ -39,28 +39,6 @@ def convert_ke_link_cuan(link_mentah):
     except:
         return link_mentah
 
-def proses_dan_ubah_semua_link(teks, url_grup):
-    # Cari semua link di dalam teks asli
-    links = re.findall(r'(https?://[^\s]+)', teks)
-    link_terubah = None
-    
-    for link in links:
-        # Cek apakah ini link marketplace yang mau di-convert
-        if any(x in link for x in ["shopee.co.id", "tokopedia.com", "tokopedia.link", "onelink.me"]):
-            link_cuan = convert_ke_link_cuan(link)
-            teks = teks.replace(link, link_cuan)
-            link_terubah = link_cuan
-            
-    # JIKA TIDAK ADA LINK SAMA SEKALI DI TEKS:
-    # Setel link cadangan otomatis menyesuaikan asal grupnya agar tidak tertukar
-    if not link_terubah:
-        if "tokoped" in url_grup:
-            link_terubah = "https://www.tokopedia.com"
-        else:
-            link_terubah = "https://shopee.co.id"
-            
-    return teks, link_terubah
-
 def intip_grup_kompetitor(url_grup):
     nama_grup = url_grup.split("/")[-1]
     print(f"🕵️‍♂️ Robot sedang mengintai grup: {nama_grup}")
@@ -68,37 +46,71 @@ def intip_grup_kompetitor(url_grup):
         url_preview = f"https://t.me/s/{nama_grup}"
         respon = requests.get(url_preview, headers=headers_web, timeout=15)
         sup = BeautifulSoup(respon.text, 'html.parser')
-        pesan_pesan = sup.find_all("div", {"class": "tgme_widget_message_text"})
         
-        if pesan_pesan:
-            pesan_terakhir = pesan_pesan[-1].text.strip()
-            return pesan_terakhir
-        return None
+        # Cari semua kotak pesan di Telegram Web Preview
+        kotak_pesan = sup.find_all("div", {"class": "tgme_widget_message_bubble"})
+        
+        if not kotak_pesan:
+            return None, None
+            
+        pesan_terakhir = kotak_pesan[-1]
+        
+        # 1. Ambil teks asli dari pesan
+        komponen_teks = pesan_terakhir.find("div", {"class": "tgme_widget_message_text"})
+        teks_asli = komponen_teks.text.strip() if komponen_teks else ""
+        
+        # 2. STRATEGI INTELIDEN: Cari link spesifik produk yang tersembunyi di dalam teks atau tombol
+        link_produk_spesifik = None
+        semua_link_href = pesan_terakhir.find_all("a")
+        
+        for link in semua_link_href:
+            href_url = link.get("href", "")
+            # Validasi apakah ini link menuju produk marketplace
+            if any(x in href_url for x in ["shopee.co.id", "tokopedia.com", "tokopedia.link", "onelink.me", "t.me/s/"]):
+                # Lewati jika itu cuma link username grup atau link telegram internal
+                if f"t.me/{nama_grup}" in href_url or href_url == url_grup:
+                    continue
+                link_produk_spesifik = href_url
+                break
+                
+        # Jika tidak ketemu di tag 'a', cari pakai regex barangkali ada link teks mentah
+        if not link_produk_spesifik and teks_asli:
+            links_raw = re.findall(r'(https?://[^\s]+)', teks_asli)
+            if links_raw:
+                link_produk_spesifik = links_raw[0]
+                
+        return teks_asli, link_produk_spesifik
     except Exception as e:
         print(f"❌ Gagal mengintai grup {nama_grup}: {e}")
-        return None
+        return None, None
 
 if __name__ == "__main__":
-    print("=== ROBOT PENGINTAI FIX CHAT ID + LOGIKA CADANGAN START ===")
+    print("=== ROBOT PENGINTAI ULTRA SPESIFIK START ===")
     
     if not TOKEN or not ID_CHAT:
         print("❌ Eror: Token atau Chat ID tidak lengkap!")
         exit(1)
         
     for grup in GRUP_TARGET:
-        pesan_raw = intip_grup_kompetitor(grup)
+        pesan_raw, link_asal = intip_grup_kompetitor(grup)
         
         if pesan_raw:
-            # Olah teks dan ubah semua link mentah yang ada di dalamnya
-            pesan_final, link_tombol = proses_dan_ubah_semua_link(pesan_raw, grup)
+            # Jika link produk spesifiknya ketemu, langsung bungkus pakai Involve Asia
+            if link_asal:
+                print(f"🔗 Link Produk Spesifik Ditemukan: {link_asal[:50]}...")
+                link_final = convert_ke_link_cuan(link_asal)
+            else:
+                # Jika benar-benar buntu tidak ada link sama sekali, baru pakai cadangan toko utama
+                print("⚠️ Tidak ada link produk spesifik sama sekali di postingan kompetitor.")
+                link_final = "https://www.tokopedia.com" if "tokoped" in grup else "https://shopee.co.id"
             
             url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
             sumber = "TOKOPEDIA HITS" if "tokoped" in grup else "SHOPEE VIRAL"
             
             pesan_kirim = (
                 f"🔥 REKOMENDASI {sumber} 🔥\n\n"
-                f"{pesan_final}\n\n"
-                f"🛍️ Miliki Produknya Sekarang Di Sini: \n{link_tombol}"
+                f"{pesan_raw}\n\n"
+                f"🛍️ Miliki Produknya Sekarang Di Sini: \n{link_final}"
             )
             
             payload = {
@@ -108,7 +120,7 @@ if __name__ == "__main__":
             
             kirim = requests.post(url_tele, json=payload, timeout=15)
             if kirim.status_code == 200:
-                print(f"🚀 Sukses mengirim postingan ber-afiliasi ke ID: {ID_CHAT}")
+                print(f"🚀 Sukses mengirim postingan spesifik ke channel!")
             else:
                 print(f"❌ Gagal kirim: {kirim.text}")
             
