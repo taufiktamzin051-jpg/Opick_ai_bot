@@ -9,10 +9,13 @@ ID_CHAT = os.getenv("TELEGRAM_CHAT_ID")
 INVOLVE_API_KEY = os.getenv("INVOLVE_API_KEY")
 INVOLVE_SECRET_KEY = os.getenv("INVOLVE_SECRET_KEY")
 
-# 2. DAFTAR GRUP TARGET YANG DIINTAI
+# 2. DAFTAR 5 GRUP TARGET YANG DIINTAI (Termasuk 3 grup baru Anda)
 GRUP_TARGET = [
     "https://t.me/SHOPEE_BIG_SALES",
-    "https://t.me/gotokped"
+    "https://t.me/gotokped",
+    "https://t.me/Racun_Shopee_Murah_Diskon_Receh",
+    "https://t.me/racun_shopee_receh_ss",
+    "https://t.me/racun_tokped_receh"
 ]
 
 headers_web = {
@@ -47,33 +50,26 @@ def intip_grup_kompetitor(url_grup):
         respon = requests.get(url_preview, headers=headers_web, timeout=15)
         sup = BeautifulSoup(respon.text, 'html.parser')
         
-        # Cari semua kotak pesan di Telegram Web Preview
         kotak_pesan = sup.find_all("div", {"class": "tgme_widget_message_bubble"})
-        
         if not kotak_pesan:
             return None, None
             
         pesan_terakhir = kotak_pesan[-1]
         
-        # 1. Ambil teks asli dari pesan
         komponen_teks = pesan_terakhir.find("div", {"class": "tgme_widget_message_text"})
         teks_asli = komponen_teks.text.strip() if komponen_teks else ""
         
-        # 2. STRATEGI INTELIDEN: Cari link spesifik produk yang tersembunyi di dalam teks atau tombol
         link_produk_spesifik = None
         semua_link_href = pesan_terakhir.find_all("a")
         
         for link in semua_link_href:
             href_url = link.get("href", "")
-            # Validasi apakah ini link menuju produk marketplace
             if any(x in href_url for x in ["shopee.co.id", "tokopedia.com", "tokopedia.link", "onelink.me", "t.me/s/"]):
-                # Lewati jika itu cuma link username grup atau link telegram internal
                 if f"t.me/{nama_grup}" in href_url or href_url == url_grup:
                     continue
                 link_produk_spesifik = href_url
                 break
                 
-        # Jika tidak ketemu di tag 'a', cari pakai regex barangkali ada link teks mentah
         if not link_produk_spesifik and teks_asli:
             links_raw = re.findall(r'(https?://[^\s]+)', teks_asli)
             if links_raw:
@@ -85,7 +81,7 @@ def intip_grup_kompetitor(url_grup):
         return None, None
 
 if __name__ == "__main__":
-    print("=== ROBOT PENGINTAI ULTRA SPESIFIK START ===")
+    print("=== ROBOT PENGINTAI MULTI-GRUP BARU START ===")
     
     if not TOKEN or not ID_CHAT:
         print("❌ Eror: Token atau Chat ID tidak lengkap!")
@@ -95,20 +91,33 @@ if __name__ == "__main__":
         pesan_raw, link_asal = intip_grup_kompetitor(grup)
         
         if pesan_raw:
-            # Jika link produk spesifiknya ketemu, langsung bungkus pakai Involve Asia
+            # Jika ketemu link produk spesifik, otomatis di-convert
             if link_asal:
-                print(f"🔗 Link Produk Spesifik Ditemukan: {link_asal[:50]}...")
+                print(f"🔗 Link Produk Ditemukan: {link_asal[:50]}...")
                 link_final = convert_ke_link_cuan(link_asal)
             else:
-                # Jika benar-benar buntu tidak ada link sama sekali, baru pakai cadangan toko utama
-                print("⚠️ Tidak ada link produk spesifik sama sekali di postingan kompetitor.")
-                link_final = "https://www.tokopedia.com" if "tokoped" in grup else "https://shopee.co.id"
+                # Logika cadangan dinamis jika tidak ada link produk sama sekali
+                print("⚠️ Tidak ada link produk spesifik, menggunakan link toko cadangan.")
+                if "tokoped" in grup.lower():
+                    link_final = "https://www.tokopedia.com"
+                else:
+                    link_final = "https://shopee.co.id"
             
             url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-            sumber = "TOKOPEDIA HITS" if "tokoped" in grup else "SHOPEE VIRAL"
+            
+            # Logika penentu judul otomatis biar sesuai tema grup target Anda
+            nama_grup_kecil = grup.lower()
+            if "tokoped" in nama_grup_kecil:
+                sumber = "TOKOPEDIA SPECIAL DISKON"
+            elif "receh" in nama_grup_kecil:
+                sumber = "RACUN SHOPEE RECEH"
+            elif "shopee" in nama_grup_kecil:
+                sumber = "SHOPEE VIRAL HITS"
+            else:
+                sumber = "REKOMENDASI DISKON TERBARU"
             
             pesan_kirim = (
-                f"🔥 REKOMENDASI {sumber} 🔥\n\n"
+                f"🔥 {sumber} 🔥\n\n"
                 f"{pesan_raw}\n\n"
                 f"🛍️ Miliki Produknya Sekarang Di Sini: \n{link_final}"
             )
@@ -120,8 +129,9 @@ if __name__ == "__main__":
             
             kirim = requests.post(url_tele, json=payload, timeout=15)
             if kirim.status_code == 200:
-                print(f"🚀 Sukses mengirim postingan spesifik ke channel!")
+                print(f"🚀 Sukses mengirim postingan dari grup: {grup.split('/')[-1]}")
             else:
                 print(f"❌ Gagal kirim: {kirim.text}")
             
     print("=== SEMUA PROSES SELESAI ===")
+    
