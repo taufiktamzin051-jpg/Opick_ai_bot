@@ -1,7 +1,6 @@
 import os
 import re
 import requests
-import tweezers # Jika ada typo, pastikan import tweepy yang benar
 import tweepy
 from telethon import TelegramClient, events
 
