@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ID_CHAT = os.getenv("TELEGRAM_CHAT_ID")
 
-# 2. DAFTAR GRUP TARGET YANG DIINTAI (Shopee & Tokopedia)
+# 2. DAFTAR GRUP TARGET YANG DIINTAI
 GRUP_TARGET = [
     "https://t.me/SHOPEE_BIG_SALES",
     "https://t.me/gotokped"
@@ -18,7 +18,6 @@ judul = {
 }
 
 def ekstrak_link_asli(teks):
-    # Mencari tautan belanja di dalam pesan grup
     links = re.findall(r'(https?://[^\s]+)', teks)
     for link in links:
         if "shopee.co.id" in link or "tokopedia.com" in link or "tokopedia.link" in link:
@@ -29,20 +28,29 @@ def intip_grup_kompetitor(url_grup):
     nama_grup = url_grup.split("/")[-1]
     print(f"🕵️‍♂️ Robot sedang mengintai grup: {nama_grup}")
     try:
-        respon = requests.get(url_grup, headers=judul, timeout=15)
+        # Gunakan jalur preview publik resmi Telegram agar pesan selalu terbaca
+        url_preview = f"https://t.me/s/{nama_grup}"
+        respon = requests.get(url_preview, headers=judul, timeout=15)
         sup = BeautifulSoup(respon.text, 'html.parser')
         
-        # Mencari pesan-pesan terakhir di dalam grup
+        # Cari semua teks pesan yang tersedia di halaman preview
         pesan_pesan = sup.find_all("div", {"class": "tgme_widget_message_text"})
         
         if not pesan_pesan:
-            print(f"📭 Tidak ditemukan pesan baru di grup {nama_grup}.")
-            return None, None
+            print(f"📭 Halaman web kosong, mencoba jalur alternatif untuk {nama_grup}...")
+            respon = requests.get(url_grup, headers=judul, timeout=15)
+            sup = BeautifulSoup(respon.text, 'html.parser')
+            pesan_pesan = sup.find_all("div", {"class": "tgme_widget_message_text"})
             
-        # Ambil pesan paling terbaru
-        pesan_terakhir = pesan_pesan[-1].text.strip()
-        link_produk = ekstrak_link_asli(pesan_terakhir)
-        return pesan_terakhir, link_produk
+        if pesan_pesan:
+            # Ambil pesan paling terakhir yang ada di grup (paling bawah)
+            pesan_terakhir = pesan_pesan[-1].text.strip()
+            print(f"📝 Konten berhasil disalin: {pesan_terakhir[:50]}...")
+            link_produk = ekstrak_link_asli(pesan_terakhir)
+            return pesan_terakhir, link_produk
+        else:
+            print(f"❌ Tetap tidak bisa membaca pesan di grup {nama_grup}")
+            return None, None
         
     except Exception as e:
         print(f"❌ Gagal mengintai grup {nama_grup}: {e}")
@@ -52,7 +60,7 @@ if __name__ == "__main__":
     print("=== ROBOT PENGINTAI MULTI-MARKETPLACE START ===")
     
     if not TOKEN or not ID_CHAT:
-        print("❌ Eror: Token/Chat ID tidak ada!")
+        print("❌ Eror: Token atau Chat ID belum diisi di GitHub Secrets!")
         exit(1)
         
     for grup in GRUP_TARGET:
@@ -67,7 +75,6 @@ if __name__ == "__main__":
             url_tele = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
             sumber = "TOKOPEDIA HITS" if "tokoped" in grup else "SHOPEE VIRAL"
             
-            # Format pesan teks biasa (Menghapus Markdown agar tidak gampang eror)
             pesan_kirim = (
                 f"🔥 REKOMENDASI {sumber} 🔥\n\n"
                 f"{konten_pesan}\n\n"
@@ -81,8 +88,8 @@ if __name__ == "__main__":
             
             kirim = requests.post(url_tele, json=payload, timeout=15)
             if kirim.status_code == 200:
-                print(f"🚀 Sukses kirim dari grup {grup.split('/')[-1]}!")
+                print(f"🚀 Sukses meneruskan postingan dari {grup.split('/')[-1]}!")
             else:
-                print(f"❌ Telegram menolak pesan: {kirim.text}")
+                print(f"❌ Gagal kirim ke Telegram Anda: {kirim.text}")
             
     print("=== SEMUA PROSES PENGINTAIAN SELESAI ===")
