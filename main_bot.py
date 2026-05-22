@@ -2,13 +2,10 @@ import os
 import re
 import requests
 import tweepy
-from telethon import TelegramClient, events
 
 # =========================================================================
 # 🔑 1. KONFIGURASI API (DIAMBIL DARI GITHUB SECRETS)
 # =========================================================================
-API_ID = os.getenv("TELEGRAM_API_ID")
-API_HASH = os.getenv("TELEGRAM_API_HASH")
 BOT_TOKEN_TELEGRAM = os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_TARGET_TELEGRAM = os.getenv("TELEGRAM_CHAT_ID")
 
@@ -19,13 +16,6 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 IA_API_KEY = os.getenv("INVOLVE_ASIA_API_KEY")
 IA_SECRET_KEY = os.getenv("INVOLVE_ASIA_SECRET_KEY")
-
-GRUP_INTAIAN = [
-    'gotokped',
-    'Racun_Shopee_Murah_Diskon_Receh',
-    'racun_shopee_receh_ss',
-    'racun_tokped_receh'
-]
 
 # =========================================================================
 # 🚀 2. FUNGSI UNTUK MENGIRIM POSTINGAN KE TWITTER (X)
@@ -90,39 +80,52 @@ def konversi_ke_link_afiliasi(link_asli):
     return link_asli
 
 # =========================================================================
-# 🧠 5. PROSES UTAMA ROBOT
+# 🧠 5. PROSES UTAMA ROBOT MEMBACA PESAN MASUK
 # =========================================================================
-POLA_LINK = r'(https?://(?:s\.shopee\.co\.id|shope\.ee|tokopedia\.link|shopee\.co\.id|tokopedia\.com)[^\s\?]+)'
+def jalankan_bot_proses():
+    print("⚡ MEMERIKSA PESAN TERBARU DARI BOT...")
+    url_updates = f"https://api.telegram.com/bot{BOT_TOKEN_TELEGRAM}/getUpdates"
+    
+    try:
+        respon = requests.get(url_updates).json()
+        if not respon.get("ok") or not respon.get("result"):
+            print("📭 Belum ada pesan masuk baru di Bot Telegram lu.")
+            return
 
-if not API_ID or not API_HASH:
-    print("❌ TELEGRAM_API_ID atau TELEGRAM_API_HASH belum di-set di Secrets!")
-    exit(1)
-
-client_pengintai = TelegramClient('session_pengintai', int(API_ID), API_HASH)
-
-@client_pengintai.on(events.NewMessage(chats=GRUP_INTAIAN))
-async def tangkap_dan_sebar(event):
-    teks_asal = event.message.message
-    if not teks_asal:
-        return
+        # Ambil pesan paling terakhir yang masuk ke bot
+        pesan_terakhir = respon["result"][-1]
         
-    cari_link = re.findall(POLA_LINK, teks_asal)
-    if cari_link:
-        link_asli = cari_link[0]
-        print(f"\n🔗 Link Produk Ditemukan: {link_asli}")
+        # Cek apakah itu pesan teks biasa atau pesan teruskan (forward)
+        if "message" in pesan_terakhir:
+            teks_asal = pesan_terakhir["message"].get("text", "")
+        elif "channel_post" in pesan_terakhir:
+            teks_asal = pesan_terakhir["channel_post"].get("text", "")
+        else:
+            return
+
+        POLA_LINK = r'(https?://(?:s\.shopee\.co\.id|shope\.ee|tokopedia\.link|shopee\.co\.id|tokopedia\.com)[^\s\?]+)'
+        cari_link = re.findall(POLA_LINK, teks_asal)
         
-        link_cuan = konversi_ke_link_afiliasi(link_asli)
-        teks_bersih = teks_asal.replace(link_asli, "").strip()
-        if not teks_bersih:
-            teks_bersih = "🔥 Rekomendasi Diskon Spesial Hari Ini! Cek Sekarang Sebelum Habis 👇"
+        if cari_link:
+            link_asli = cari_link[0]
+            print(f"\n🔗 Link Produk Ditemukan: {link_asli}")
             
-        format_postingan = f"{teks_bersih}\n\n👉 Klik Belanja di Sini: {link_cuan}"
-        
-        # Kirim ke dua platform sekaligus
-        kirim_ke_telegram(format_postingan)
-        kirim_ke_twitter(format_postingan)
+            link_cuan = konversi_ke_link_afiliasi(link_asli)
+            teks_bersih = teks_asal.replace(link_asli, "").strip()
+            if not teks_bersih:
+                teks_bersih = "🔥 Rekomendasi Diskon Spesial Hari Ini! Cek Sekarang Sebelum Habis 👇"
+                
+            format_postingan = f"{teks_bersih}\n\n👉 Klik Belanja di Sini: {link_cuan}"
+            
+            # Duet maut sebar ke sosmed
+            kirim_ke_telegram(format_postingan)
+            kirim_ke_twitter(format_postingan)
+        else:
+            print("ℹ️ Pesan masuk tidak mengandung link belanja Shopee/Tokopedia. Diabaikan.")
+            
+    except Exception as e:
+        print(f"❌ Terjadi gangguan sistem: {e}")
 
 if __name__ == '__main__':
-    print("⚡ ROBOT DUET TELEGRAM & TWITTER MULAI DINYALAKAN...")
-    client_pengintai.start()
-    client_pengintai.run_until_disconnected()
+    jalankan_bot_proses()
+                
