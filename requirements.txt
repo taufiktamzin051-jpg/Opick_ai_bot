@@ -1,7 +1,6 @@
 gspread
 google-auth
 requests
-pyTelegramBotAPI
+telethon
 beautifulsoup4
 tweepy
-
