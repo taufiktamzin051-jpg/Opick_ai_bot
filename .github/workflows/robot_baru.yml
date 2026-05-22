@@ -1,0 +1,30 @@
+name: Auto Pilot Affiliate Involve Asia
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Jalan otomatis setiap 1 jam
+  workflow_dispatch: # TOMBOL RAHASIA UNTUK JALAN MANUAL
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil Kode Repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan Sistem Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instal Bahan Pendukung
+        run: |
+          pip install requests
+
+      - name: Nyalakan Robot Afiliasi
+        env:
+          INVOLVE_API_KEY: ${{ secrets.INVOLVE_API_KEY }}
+          INVOLVE_API_SECRET: ${{ secrets.INVOLVE_API_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python affilibot.py
