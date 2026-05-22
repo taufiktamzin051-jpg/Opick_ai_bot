@@ -1,9 +1,9 @@
-name: Auto Pilot Affiliate Involve Asia
+name: Robot Afiliasi Tokopedia Baru
 
 on:
   schedule:
-    - cron: '0 * * * *' # Jalan otomatis setiap 1 jam
-  workflow_dispatch: # TOMBOL RAHASIA UNTUK JALAN MANUAL
+    - cron: '0 * * * *' # Otomatis jalan setiap 1 jam
+  workflow_dispatch: # Tombol manual
 
 jobs:
   run-bot:
